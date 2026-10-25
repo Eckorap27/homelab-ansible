@@ -1,0 +1,48 @@
+# Pruebas. Ninguna cambia nada.
+
+- name:                       Mirar cuál es la carpeta personal del usuario
+  # Se pregunta al sistema y no se reutiliza lo registrado en tasks/: con
+  # --tags prueba esas tareas no se ejecutan.
+  ansible.builtin.getent:
+    database:                 passwd
+    key:                      "{{ configuracion_preparacion.usuario }}"
+  tags:
+    - prueba
+
+- name:                       Comprobar que la clave de AWX está en authorized_keys
+  # argv y no cmd: la clave lleva espacios y así no hay que pelearse con comillas.
+  # El quinto campo de passwd (posición 4) es la carpeta personal.
+  ansible.builtin.command:
+    argv:
+      - grep
+      - -qxF
+      - "{{ configuracion_preparacion.clave_publica }}"
+      - "{{ ansible_facts.getent_passwd[configuracion_preparacion.usuario][4] }}/.ssh/authorized_keys"
+  become:                     true
+  changed_when:               false
+  tags:
+    - prueba
+
+- name:                       Mirar qué permisos de sudo tiene el usuario
+  ansible.builtin.command:
+    argv:
+      - sudo
+      - -l
+      - -U
+      - "{{ configuracion_preparacion.usuario }}"
+  become:                     true
+  register:                   permisos_sudo
+  changed_when:               false
+  when:                       configuracion_preparacion.sudo_sin_contrasena | bool
+  tags:
+    - prueba
+
+- name:                       Comprobar que el usuario puede hacer sudo sin contraseña
+  ansible.builtin.assert:
+    that:
+      - "'NOPASSWD: ALL' in permisos_sudo.stdout"
+    fail_msg:                 "{{ configuracion_preparacion.usuario }} no tiene sudo sin contraseña: revisa /etc/sudoers.d/"
+    success_msg:              "{{ configuracion_preparacion.usuario }} hace sudo sin contraseña"
+  when:                       configuracion_preparacion.sudo_sin_contrasena | bool
+  tags:
+    - prueba

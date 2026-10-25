@@ -1,0 +1,18 @@
+# Máquinas del homelab.
+#
+# El nombre de cada host es un alias estable; ansible_host es su IP en la red
+# NAT "homelab" de VirtualBox (fijada por DHCP, ver scripts/crear-homelab.ps1).
+# Las variables de conexión van en group_vars/, no aquí.
+#
+# Sintaxis INI, pero SIN extensión .ini: dentro de un directorio de inventario
+# Ansible ignora los .ini (INVENTORY_IGNORE_EXTS) y no cargaría ninguna máquina.
+
+[servidores]
+servidor-rocky   ansible_host=10.10.10.11
+servidor-ubuntu  ansible_host=10.10.10.12
+
+[rocky]
+servidor-rocky
+
+[ubuntu]
+servidor-ubuntu

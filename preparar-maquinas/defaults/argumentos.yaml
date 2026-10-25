@@ -1,0 +1,18 @@
+# Valores por defecto de los argumentos del playbook.
+#
+# Quien lo ejecuta pasa `preparacion` (extra vars de AWX) y se mezcla ENCIMA de
+# esto: solo tiene que dar lo que quiera cambiar. Ver
+# pre_tasks/preparar-informacion.yaml.
+#
+# UN SOLO documento YAML: include_vars no acepta varios `---`.
+
+preparacion:
+  usuario:              ansible    # Usuario con el que Ansible entrará en las máquinas
+  clave_publica:        ""         # OBLIGATORIO: la clave pública SSH de AWX (una línea "ssh-ed25519 AAAA... comentario")
+  sudo_sin_contrasena:  true       # true: ese usuario hace sudo sin pedir contraseña
+                                   # false: se quita el permiso si lo había puesto este playbook
+
+# ── Ejemplo de extra vars en AWX ────────────────────────────────────────────
+#
+# preparacion:
+#   clave_publica:      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA... awx-homelab"

@@ -1,0 +1,16 @@
+- name:                       Terminar en este host si su distribución no está soportada
+  ansible.builtin.meta:       end_host
+  when:                       familia_sistema_operativo not in distros_soportadas
+
+- name:                       Comprobar que nos han dado lo imprescindible para trabajar
+  # Mejor parar aquí con un mensaje claro que dejar en authorized_keys una
+  # línea que no es una clave: no daría error, pero no se podría entrar.
+  ansible.builtin.assert:
+    that:
+      - configuracion_preparacion.usuario | length > 0
+      - configuracion_preparacion.clave_publica is match('^(ssh-(ed25519|rsa)|ecdsa-sha2-nistp(256|384|521)) [A-Za-z0-9+/=]+( .*)?$')
+    fail_msg:                 >-
+                              Falta preparacion.clave_publica o no parece una clave pública SSH. Tiene que
+                              ser una sola línea, como "ssh-ed25519 AAAAC3Nza... awx-homelab"
+                              (el contenido del fichero .pub, nunca la clave privada).
+    quiet:                    true

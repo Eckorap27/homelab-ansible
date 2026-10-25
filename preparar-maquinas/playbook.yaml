@@ -1,0 +1,32 @@
+- name:                       Dejar las máquinas listas para que Ansible las gestione con clave SSH y sudo sin contraseña
+  hosts:                      servidores
+  gather_facts:               false
+
+  vars:
+    distros_soportadas:
+      - debian
+      - redhat
+
+  pre_tasks:
+    - name:                   Preparar y comprobar lo que el playbook necesita
+      ansible.builtin.include_tasks:
+        file:                 pre_tasks/main.yaml
+        apply:
+          tags:
+            - always
+      tags:
+        - always
+
+  tasks:
+    - name:                   Tareas principales del playbook
+      ansible.builtin.include_tasks:
+        file:                 tasks/main.yaml
+      tags:
+        - always
+
+  post_tasks:
+    - name:                   Comprobar que todo ha quedado bien
+      ansible.builtin.include_tasks:
+        file:                 post_tasks/main.yaml
+      tags:
+        - always

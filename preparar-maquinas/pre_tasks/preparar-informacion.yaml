@@ -1,0 +1,24 @@
+- name:                       Cargar los valores por defecto de los argumentos
+  # Bajo un nombre propio y no como `preparacion`: lo que carga include_vars
+  # pisaría lo que nos pasan en el inventario.
+  ansible.builtin.include_vars:
+    file:                     defaults/argumentos.yaml
+    name:                     argumentos_por_defecto
+
+- name:                       Obtener la distribución del sistema operativo del host
+  # Solo la distribución: el gather_facts completo tarda y no lo necesitamos.
+  ansible.builtin.setup:
+    gather_subset:
+      - "!all"
+      - "!min"
+      - distribution
+
+- name:                       Normalizar la familia del sistema operativo
+  ansible.builtin.set_fact:
+    familia_sistema_operativo: "{{ ansible_facts.os_family | lower }}"
+
+- name:                       Mezclar los argumentos recibidos con los valores por defecto
+  # A partir de aquí se lee siempre configuracion_preparacion, nunca preparacion:
+  # las extra vars de AWX ganan a todo y `preparacion` llegaría sin los defectos.
+  ansible.builtin.set_fact:
+    configuracion_preparacion: "{{ argumentos_por_defecto.preparacion | combine(preparacion | default({}), recursive=true) }}"

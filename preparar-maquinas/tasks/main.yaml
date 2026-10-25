@@ -1,0 +1,58 @@
+# Un solo bloque: todo es dar acceso a Ansible. La etiqueta y el become se
+# ponen en el bloque y los heredan sus tareas.
+#
+# Solo módulos de ansible.builtin: funciona con la imagen que trae AWX por
+# defecto, sin colecciones que instalar.
+
+# ── ACCESO ──────────────────────────────────────────────────────────────────
+- name:                       Acceso de Ansible a la máquina
+  become:                     true
+  tags:
+    - acceso
+  block:
+    - name:                   Asegurar que existe el usuario de Ansible
+      ansible.builtin.user:
+        name:                 "{{ configuracion_preparacion.usuario }}"
+        shell:                /bin/bash
+        state:                present
+      register:               usuario_ansible
+
+    - name:                   Asegurar que existe su carpeta .ssh con los permisos que exige SSH
+      # SSH ignora la clave si la carpeta la pueden leer otros usuarios.
+      ansible.builtin.file:
+        path:                 "{{ usuario_ansible.home }}/.ssh"
+        state:                directory
+        owner:                "{{ usuario_ansible.uid }}"
+        group:                "{{ usuario_ansible.group }}"
+        mode:                 "0700"
+
+    - name:                   Asegurar que la clave pública de AWX está autorizada
+      # lineinfile y no copy: si el fichero ya tiene otras claves (la tuya, por
+      # ejemplo), se quedan donde están.
+      ansible.builtin.lineinfile:
+        path:                 "{{ usuario_ansible.home }}/.ssh/authorized_keys"
+        line:                 "{{ configuracion_preparacion.clave_publica }}"
+        create:               true
+        owner:                "{{ usuario_ansible.uid }}"
+        group:                "{{ usuario_ansible.group }}"
+        mode:                 "0600"
+
+    - name:                   Asegurar que el usuario hace sudo sin contraseña
+      ansible.builtin.copy:
+        dest:                 "/etc/sudoers.d/90-{{ configuracion_preparacion.usuario }}"
+        content:              |
+                              # Lo escribe el playbook preparar-maquinas: un cambio a mano aquí se pierde.
+                              {{ configuracion_preparacion.usuario }} ALL=(ALL) NOPASSWD: ALL
+        owner:                root
+        group:                root
+        mode:                 "0440"
+        # Un sudoers mal escrito deja la máquina sin sudo para nadie. visudo
+        # lo revisa antes de ponerlo en su sitio; si está mal, no se toca nada.
+        validate:             visudo -cf %s
+      when:                   configuracion_preparacion.sudo_sin_contrasena | bool
+
+    - name:                   Asegurar que el usuario no tiene sudo sin contraseña puesto por este playbook
+      ansible.builtin.file:
+        path:                 "/etc/sudoers.d/90-{{ configuracion_preparacion.usuario }}"
+        state:                absent
+      when:                   not configuracion_preparacion.sudo_sin_contrasena | bool

@@ -1,0 +1,6 @@
+.ansible/
+context/
+ansible-navigator.log
+*.retry
+*-artifact-*.json
+.DS_Store
